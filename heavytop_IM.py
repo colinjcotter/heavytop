@@ -14,7 +14,7 @@ g0 = 10.0
 g = Constant(g0)
 dt = 0.01
 dtc = Constant(dt)
-d = Constant(4)
+d = Constant(10)
 Chi0 = [0, 1.0, 0]
 Chi.interpolate(as_vector([Chi0[0],
                            Chi0[1],
@@ -42,8 +42,7 @@ Omeganh = dot(Iinv, Pinh)
 dPi, dGamma = TestFunctions(W)
 
 eq_vec = g*(Gammanh - Chi) \
-    - d**2/Constant(12.0)*inner(Gammanh, Omeganh)* \
-    cross(Gammanh, Omeganh)
+    + d**2/Constant(12.0)*cross(Omeganh, cross(Gammanh, Omeganh))
 
 eqn = (
     inner(Pinp - Pin + dtc*cross(Pinh, Omeganh)
@@ -72,7 +71,7 @@ o_prob = LinearVariationalProblem(lhs(eqn), rhs(eqn), Omegan)
 o_solver = LinearVariationalSolver(o_prob, solver_parameters=
                                    solver_parameters)
 
-tmax = 1.0
+tmax = 100.0
 t= 0.0
 Unp.assign(Un)
 nct = 0
@@ -89,6 +88,7 @@ o_solver.solve()
 Omegas[:, 0] = Omegan.dat.data
 while t < tmax - 0.5*dt:
     t += dt
+    print(t, tmax)
     t_solver.solve()
     Un.assign(Unp)
     o_solver.solve()
@@ -141,11 +141,12 @@ if diags:
     casimir = np.sum(Gammas*Pis, axis=0)
     pp.plot(ts, casimir - casimir[0])
     pp.subplot(3,1,3)
-    Energy = 0.5*np.sum(Omegas*Pis, axis=0) + \
-        0.5*g0*((Gammas[0, :] - Chi0[0])**2 +
-               (Gammas[1, :] - Chi0[1])**2 +
-               (Gammas[2, :] - Chi0[2])**2)
-    print(Energy.shape, ts.shape)
+    Energy = 0.5*(Omegas[0, :]*Pis[0, :] +
+                  Omegas[1, :]*Pis[1, :] +
+                  Omegas[2, :]*Pis[2, :]) + \
+                0.5*g0*((Gammas[0, :] - Chi0[0])**2 +
+                        (Gammas[1, :] - Chi0[1])**2 +
+                        (Gammas[2, :] - Chi0[2])**2)
     pp.plot(ts, Energy - Energy[0])
     pp.show()
 
